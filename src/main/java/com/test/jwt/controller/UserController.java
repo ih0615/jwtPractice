@@ -2,10 +2,10 @@ package com.test.jwt.controller;
 
 import com.test.jwt.entity.TokenManager;
 import com.test.jwt.entity.TokenManagerRepository;
-import com.test.jwt.lib.JwtUtil;
-import com.test.jwt.lib.UserStatus;
 import com.test.jwt.entity.User;
 import com.test.jwt.entity.UserRepository;
+import com.test.jwt.lib.JwtUtil;
+import com.test.jwt.lib.UserStatus;
 import com.test.jwt.request.AuthRequest;
 import com.test.jwt.request.UserRequestDto;
 import com.test.jwt.response.UserResponseDto;
@@ -21,8 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
