@@ -21,7 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -56,14 +59,19 @@ public class UserController {
 
     @ApiOperation(value = "자신의 정보 찾기", notes = "단일 회원 찾기")
     @GetMapping("/one")
-    public ResponseEntity<?> findOneUser(@RequestHeader("Authorization") String bearerToken) {
-        String userId = jwtUtil.extractUsername(bearerToken.substring(7));
+    public ResponseEntity<?> findOneUser(HttpServletRequest request) {
+
+        String token = request.getHeader("Authorization").substring(7);
+
+        String userId = jwtUtil.extractUsername(token);
+
         return new ResponseEntity<>(repository.findOneUser(userId), HttpStatus.OK);
     }
 
     @PutMapping
-    public ResponseEntity<?> updateOneUser(UserRequestDto.UserUpdateDto updateDto, @RequestHeader("Authorization") String bearerToken) {
-        String token = bearerToken.substring(7);
+    public ResponseEntity<?> updateOneUser(HttpServletRequest request, UserRequestDto.UserUpdateDto updateDto) {
+
+        String token = request.getHeader("Authorization").substring(7);
 
         String userId = jwtUtil.extractUsername(token);
         System.out.println(userId);
@@ -143,8 +151,9 @@ public class UserController {
     }
 
     @DeleteMapping
-    public ResponseEntity<?> deleteUser(@RequestHeader("Authorization") String bearerToken) {
-        User user = repository.findOneByUserId(jwtUtil.extractUsername(bearerToken.substring(7)));
+    public ResponseEntity<?> deleteUser(HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        User user = repository.findOneByUserId(jwtUtil.extractUsername(token));
         user.setUserStatus(UserStatus.deleted);
         return new ResponseEntity<>(repository.save(user), HttpStatus.OK);
     }

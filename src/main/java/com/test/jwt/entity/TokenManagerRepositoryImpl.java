@@ -33,11 +33,18 @@ public class TokenManagerRepositoryImpl extends QuerydslRepositorySupport implem
     }
 
     @Override
-    public Long renewAccessToken(String newAccessToken,String refreshToken, LocalDateTime AccessTokenExpiredDate) {
+    public Long renewAccessToken(String newAccessToken, String refreshToken, LocalDateTime AccessTokenExpiredDate) {
         return update(tokenManager)
                 .where(tokenManager.refresh_token.eq(refreshToken))
-                .set(tokenManager.accessToken,newAccessToken)
-                .set(tokenManager.expiredAccessDate,AccessTokenExpiredDate)
+                .set(tokenManager.accessToken, newAccessToken)
+                .set(tokenManager.expiredAccessDate, AccessTokenExpiredDate)
                 .execute();
+    }
+
+    @Override
+    public Long isVaildToken(String accessToken) {
+        return from(tokenManager).select(tokenManager.count())
+                .where(tokenManager.accessToken.eq(accessToken).and(tokenManager.expiredAccessDate.after(LocalDateTime.now())))
+                .fetchOne();
     }
 }
