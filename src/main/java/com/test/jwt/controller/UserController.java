@@ -13,11 +13,13 @@ import com.test.jwt.response.UserResponseDto;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ObjectError;
@@ -48,6 +50,9 @@ public class UserController {
     @Autowired
     TokenManagerRepository tokenManagerRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     //단일 걸 때
 //  @ApiOperation(value = "user", authorizations = @Authorization(value = "Bearer"))
     @ApiOperation(value = "전체 회원 찾기", notes = "전체 회원 찾기")
@@ -77,7 +82,7 @@ public class UserController {
 
         User user = repository.findOneByUserId(userId);
 
-        user.setUserPassword("{noop}" + updateDto.getUserPassword());
+        user.setUserPassword(passwordEncoder.encode(updateDto.getUserPassword()));
         user.setEmail(updateDto.getEmail());
 
         User tmp = repository.save(user);
@@ -96,12 +101,10 @@ public class UserController {
             throw new Exception("잘못된 아이디나 비밀번호 입니다.");
         }
 
-        //Todo 데이터 베이스에서 권한 가지고 와야함
         TokenResponseDto.TokenCommonDto tokenCommonDto = tokenManagerRepository.findToken(authRequest);
 
         String accessToken = null;
         String refreshToken = null;
-
 
         if (tokenCommonDto == null) {
             accessToken = jwtUtil.generateToken(authRequest.getUserId());
@@ -113,8 +116,7 @@ public class UserController {
                     LocalDateTime.ofInstant(jwtUtil.extractExpiration(refreshToken).toInstant(), ZoneId.systemDefault()),
                     repository.findIdxByUserId(authRequest.getUserId()));
             tokenManagerRepository.save(tokenManager);
-        } else if (tokenCommonDto.getExpiredAccessDate().isBefore(LocalDateTime.now())
-                && tokenCommonDto.getExpiredRefreshDate().isBefore(LocalDateTime.now())) {
+        } else if (tokenCommonDto.getExpiredRefreshDate().isBefore(LocalDateTime.now())) {
             accessToken = jwtUtil.generateToken(authRequest.getUserId());
             refreshToken = jwtUtil.generateRefreshToken(authRequest.getUserId());
 
@@ -149,7 +151,6 @@ public class UserController {
         if (userId == null || userId.equals("")) {
             return "Not vaild RefreshToken";
         } else {
-            //Todo 데이터 베이스의 권한 가지고 와야함
             String newAccessToken = jwtUtil.generateToken(userId);
 
             tokenManagerRepository.renewAccessToken(newAccessToken, refreshToken, LocalDateTime.ofInstant(jwtUtil.extractExpiration(newAccessToken).toInstant(), ZoneId.systemDefault()));
@@ -175,6 +176,7 @@ public class UserController {
         }
 
         User user = new User(commonDto);
+        user.setUserPassword(passwordEncoder.encode(commonDto.getUserPassword()));
         user.setUserStatus(UserStatus.alive);
         return new ResponseEntity<>(new UserResponseDto.UserCommonDto(repository.save(user)), HttpStatus.OK);
     }
