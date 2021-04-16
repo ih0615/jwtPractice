@@ -41,9 +41,9 @@ public class JwtUtil {
         return createToken(claims, username);
     }
 
-    public String generateRefreshToken() {
+    public String generateRefreshToken(String username) {
         Map<String, Object> claims = new HashMap<>();
-        return createRefreshToken(claims);
+        return createRefreshToken(claims, username);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
@@ -56,10 +56,11 @@ public class JwtUtil {
                 .signWith(SignatureAlgorithm.HS256, secret).compact();
     }
 
-    private String createRefreshToken(Map<String, Object> claims) {
+    private String createRefreshToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setHeaderParam("typ", "JWT")
                 .setClaims(claims)
+                .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 14))
                 .signWith(SignatureAlgorithm.HS256, secret).compact();

@@ -1,5 +1,6 @@
 package com.test.jwt.request;
 
+import com.test.jwt.lib.UserRole;
 import io.swagger.annotations.ApiParam;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,6 +28,8 @@ public class UserRequestDto {
         @ApiParam(type = "String", value = "사용자 이메일", example = "a@yahoo.co.kr")
         @Email(message = "{email.regexp}")
         private String email;
+        @ApiParam(type = "String", value = "사용자 권한", example = "admin")
+        private UserRole userRole;
     }
 
     @Data

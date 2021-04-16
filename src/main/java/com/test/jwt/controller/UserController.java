@@ -8,6 +8,7 @@ import com.test.jwt.lib.JwtUtil;
 import com.test.jwt.lib.UserStatus;
 import com.test.jwt.request.AuthRequest;
 import com.test.jwt.request.UserRequestDto;
+import com.test.jwt.response.TokenResponseDto;
 import com.test.jwt.response.UserResponseDto;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -95,15 +96,44 @@ public class UserController {
             throw new Exception("잘못된 아이디나 비밀번호 입니다.");
         }
 
-        String accessToken = jwtUtil.generateToken(authRequest.getUserId());
-        String refreshToken = jwtUtil.generateRefreshToken();
+        //Todo 데이터 베이스에서 권한 가지고 와야함
+        TokenResponseDto.TokenCommonDto tokenCommonDto = tokenManagerRepository.findToken(authRequest);
 
-        TokenManager tokenManager = new TokenManager(accessToken,
-                refreshToken,
-                LocalDateTime.ofInstant(jwtUtil.extractExpiration(accessToken).toInstant(), ZoneId.systemDefault()),
-                LocalDateTime.ofInstant(jwtUtil.extractExpiration(refreshToken).toInstant(), ZoneId.systemDefault()),
-                repository.findIdxByUserId(authRequest.getUserId()));
-        tokenManagerRepository.save(tokenManager);
+        String accessToken = null;
+        String refreshToken = null;
+
+
+        if (tokenCommonDto == null) {
+            accessToken = jwtUtil.generateToken(authRequest.getUserId());
+            refreshToken = jwtUtil.generateRefreshToken(authRequest.getUserId());
+
+            TokenManager tokenManager = new TokenManager(accessToken,
+                    refreshToken,
+                    LocalDateTime.ofInstant(jwtUtil.extractExpiration(accessToken).toInstant(), ZoneId.systemDefault()),
+                    LocalDateTime.ofInstant(jwtUtil.extractExpiration(refreshToken).toInstant(), ZoneId.systemDefault()),
+                    repository.findIdxByUserId(authRequest.getUserId()));
+            tokenManagerRepository.save(tokenManager);
+        } else if (tokenCommonDto.getExpiredAccessDate().isBefore(LocalDateTime.now())
+                && tokenCommonDto.getExpiredRefreshDate().isBefore(LocalDateTime.now())) {
+            accessToken = jwtUtil.generateToken(authRequest.getUserId());
+            refreshToken = jwtUtil.generateRefreshToken(authRequest.getUserId());
+
+            TokenManager tokenManager = new TokenManager(accessToken,
+                    refreshToken,
+                    LocalDateTime.ofInstant(jwtUtil.extractExpiration(accessToken).toInstant(), ZoneId.systemDefault()),
+                    LocalDateTime.ofInstant(jwtUtil.extractExpiration(refreshToken).toInstant(), ZoneId.systemDefault()),
+                    repository.findIdxByUserId(authRequest.getUserId()));
+            tokenManagerRepository.updateAllToken(tokenManager);
+        } else if (tokenCommonDto.getExpiredAccessDate().isBefore(LocalDateTime.now())) {
+            accessToken = jwtUtil.generateToken(authRequest.getUserId());
+            refreshToken = tokenCommonDto.getRefreshToken();
+
+            tokenManagerRepository.updateAccessToken(accessToken, LocalDateTime.ofInstant(jwtUtil.extractExpiration(accessToken).toInstant(), ZoneId.systemDefault()), repository.findIdxByUserId(authRequest.getUserId()));
+        } else {
+            accessToken = tokenCommonDto.getAccessToken();
+            refreshToken = tokenCommonDto.getRefreshToken();
+        }
+
 
         Map<String, String> tokenList = new HashMap<>();
         tokenList.put("accessToken", accessToken);
@@ -119,6 +149,7 @@ public class UserController {
         if (userId == null || userId.equals("")) {
             return "Not vaild RefreshToken";
         } else {
+            //Todo 데이터 베이스의 권한 가지고 와야함
             String newAccessToken = jwtUtil.generateToken(userId);
 
             tokenManagerRepository.renewAccessToken(newAccessToken, refreshToken, LocalDateTime.ofInstant(jwtUtil.extractExpiration(newAccessToken).toInstant(), ZoneId.systemDefault()));

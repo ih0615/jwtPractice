@@ -1,7 +1,6 @@
 package com.test.jwt.entity;
 
 import com.querydsl.core.types.Projections;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.test.jwt.lib.UserStatus;
 import com.test.jwt.response.UserResponseDto;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
@@ -15,11 +14,9 @@ import static com.test.jwt.entity.QUser.user;
 @Repository
 public class UserRepositoryImpl extends QuerydslRepositorySupport implements UserCustom {
 
-    private final JPAQueryFactory queryFactory;
 
-    public UserRepositoryImpl(JPAQueryFactory queryFactory) {
+    public UserRepositoryImpl() {
         super(User.class);
-        this.queryFactory = queryFactory;
     }
 
     @Override
